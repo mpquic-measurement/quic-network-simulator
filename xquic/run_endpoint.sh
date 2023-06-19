@@ -16,7 +16,7 @@ openssl req -newkey rsa:2048 -x509 -nodes -keyout "$keyfile" -new -out "$certfil
 if [ "$ROLE" == "client" ]; then
     # Wait for the simulator to start up.
     /wait-for-it.sh sim:57832 -s -t 30
-    ./test_client -G -a 193.167.100.100 -p 4433 -o ./clog -w result -l d -n 1 -c r
+    ./test_client -G -a 193.167.100.100 -p 4433 -o /logs/clog -w /logs/result -l d -n 1 -c r
 elif [ "$ROLE" == "server" ]; then
-    ./test_server -l d -p 4433 -s 1048576
+    ./test_server -l d -p 4433 -s 1048576 -o /logs/slog
 fi
