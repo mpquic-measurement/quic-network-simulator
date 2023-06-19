@@ -34,8 +34,26 @@ COPY scenarios scratch/
 
 ## compile all the scenarios
 RUN ./ns3 build && \
-  cd build/lib && du -sh . && strip -v * && du -sh . && cd ../.. && \
-  cd build/scratch && rm -r subdir *-scratch-simulator*
+    rm -rf /ns3/scratch/nested-subdir && \
+    cd build/lib && du -sh . && strip -v * && du -sh . && cd ../.. && \
+    cd build/scratch && rm -r subdir *-scratch-simulator*
+
+# add mpquic module
+WORKDIR /ns3/src
+RUN git clone https://github.com/ssjShirley/ns3-mpquic-module.git quic && \
+    cp -r quic/quic-applications/helper/. applications/helper/. && \
+    cp -r quic/quic-applications/model/. applications/model/. && \
+    mv quic/examples ../examples/quic && \
+    cd /ns3 && \
+    git apply < src/quic/ns3.patch
+
+WORKDIR /ns3
+
+RUN ./ns3 configure --enable-examples \
+                    --enable-python-bindings \
+                    -- -DNS3_BINDINGS_INSTALL_DIR="$HOME/.local/lib/python3.10/site-packages"
+RUN ./ns3 build -j$(nproc)
+
 
 ENV PATH="/go/bin:${PATH}"
 COPY wait-for-it-quic /wait-for-it-quic
