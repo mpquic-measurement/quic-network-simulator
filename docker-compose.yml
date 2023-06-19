@@ -50,7 +50,7 @@ services:
       - "client46:fd00:cafe:cafe:0::100"
 
   client:
-    image: cr.jinwei.me/mpquic/quic-network-simulator-xquic:22.04
+    image: cr.jinwei.me/mpquic/quic-network-simulator-ns3:22.04
     container_name: client
     hostname: client
     stdin_open: true
