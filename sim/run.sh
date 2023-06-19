@@ -22,7 +22,8 @@ fi
 
 echo "Using scenario:" $SCENARIO
 
-eval ./scratch/"$SCENARIO &"
+eval ./scratch/simple-p2p/ns3.38-simple-p2p-default --delay=15ms --bandwidth=10Mbps --queue=25 &
+#eval ./scratch/ns3.38-simple-p2p-default $SCENARIO_PARAMS &
 
 PID=`jobs -p`
 trap "kill -SIGINT $PID" INT

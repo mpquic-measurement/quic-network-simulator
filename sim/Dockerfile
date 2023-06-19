@@ -41,21 +41,16 @@ ENV PATH="/go/bin:${PATH}"
 COPY wait-for-it-quic /wait-for-it-quic
 RUN cd /wait-for-it-quic && go build .
 
-FROM ubuntu:22.04
-
 RUN apt-get update && \
-  apt-get install -y net-tools iptables && \
+  apt-get install -y net-tools iptables libsqlite3-dev libxml2-dev libeigen3-dev vim htop && \
   apt-get clean
 
-WORKDIR /ns3
-COPY --from=builder /ns3/build/src/fd-net-device/* /ns3/src/fd-net-device/
-COPY --from=builder /ns3/build/scratch/*/* /ns3/scratch/
-COPY --from=builder /ns3/build/lib/ /ns3/lib
-COPY --from=builder /wait-for-it-quic/wait-for-it-quic /usr/bin
+WORKDIR /ns3/build/
+RUN  cp -r /wait-for-it-quic/wait-for-it-quic /usr/bin
 
 # see https://gitlab.com/nsnam/ns-3-dev/issues/97
-ENV PATH="/ns3/src/fd-net-device/:${PATH}"
-ENV LD_LIBRARY_PATH="/ns3/lib"
+ENV PATH="/ns3/build/src/fd-net-device/:${PATH}"
+ENV LD_LIBRARY_PATH="/ns3/build/lib"
 
 COPY run.sh .
 RUN chmod +x run.sh

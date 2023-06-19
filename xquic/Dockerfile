@@ -1,4 +1,4 @@
-FROM quic-network-simulator-endpoint:22.04
+FROM cr.jinwei.me/mpquic/quic-network-simulator-endpoint:22.04
 
 RUN apt-get update && apt-get install -y sudo vim nano tree libcurl4-openssl-dev libevent-dev htop \
                                          git build-essential cmake software-properties-common && \
