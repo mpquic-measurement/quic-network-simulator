@@ -15,22 +15,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * n0                     n2
- *   \        TCP        /
- *    n1 -------------- n8
- *   /         P0        \
- * n4                     n5
- *   \         P1        /
- *    n6 -------------- n9
- *   /        TCP        \
- * n3                     n7
- *
- *
  * Authors: Alvise De Biasio <alvise.debiasio@gmail.com>
  *          Federico Chiariotti <whatever@blbl.it>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
  *          Shengjie Shu <shengjies@uvic.ca>
+ *          Jinwei Zhao <clarkzjw@uvic.ca>
+ * 
  */
 
 #include "ns3/core-module.h"
@@ -47,7 +38,7 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("wns3-mpquic-two-path");
+NS_LOG_COMPONENT_DEFINE("mpquic-ns3");
 
 void ThroughputMonitor (FlowMonitorHelper *fmhelper, Ptr<FlowMonitor> flowMon, Ptr<OutputStreamWrapper> stream)
 {
