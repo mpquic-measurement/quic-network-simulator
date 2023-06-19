@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -x
 
 # We are using eth0 and eth1 as EmuFdNetDevices in ns3.
 # Use promiscuous mode to allow ns3 to capture all packets.

@@ -1,60 +1,56 @@
-FROM ubuntu:20.04 AS builder
+FROM ubuntu:22.04 AS builder
 
 ARG TARGETPLATFORM
 RUN echo "TARGETPLATFORM : $TARGETPLATFORM"
 
 RUN apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y python3 build-essential cmake wget
+  DEBIAN_FRONTEND=noninteractive apt-get install -y cmake sudo git wget curl python3 python3-dev python3-pip pkg-config \
+                                                    cmake-format libxml2-dev libeigen3-dev nano libsqlite3-dev vim htop && \
+    pip install cppyy
 
-ENV VERS 3.32
+ENV VERS 3.38
 RUN wget https://www.nsnam.org/release/ns-allinone-$VERS.tar.bz2
 RUN tar xjf ns-allinone-$VERS.tar.bz2 && rm ns-allinone-$VERS.tar.bz2
 RUN mv /ns-allinone-$VERS/ns-$VERS /ns3
 
 WORKDIR /ns3
 
-RUN mkdir out/
-RUN ./waf configure --build-profile=release --out=out/
-RUN ./waf build
+RUN ./ns3 configure --enable-examples \
+                    --enable-python-bindings \
+                    -- -DNS3_BINDINGS_INSTALL_DIR="$HOME/.local/lib/python3.10/site-packages"
+RUN ./ns3 build -j$(nproc)
 
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then cd / && \
-      wget https://dl.google.com/go/go1.15.linux-amd64.tar.gz && \
-      tar xfz go1.15.linux-amd64.tar.gz && \
-      rm go1.15.linux-amd64.tar.gz; \
-    fi
+RUN apt-get update && apt-get install software-properties-common -y && \
+    add-apt-repository ppa:longsleep/golang-backports -y && \
+    apt update && \
+    apt install -y golang-go
 
-RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then cd / && \
-      wget https://dl.google.com/go/go1.15.linux-arm64.tar.gz && \
-      tar xfz go1.15.linux-arm64.tar.gz && \
-      rm go1.15.linux-arm64.tar.gz; \
-    fi
-
-# make including of the QuicNetworkSimulatorHelper class possible
-COPY wscript.patch .
-RUN patch < wscript.patch
+## make including of the QuicNetworkSimulatorHelper class possible
+COPY CMakeLists.txt.patch .
+RUN patch -p1 < CMakeLists.txt.patch
 
 RUN rm -r scratch/subdir scratch/scratch-simulator.cc
 COPY scenarios scratch/
 
-# compile all the scenarios
-RUN ./waf build  && \
-  cd out/lib && du -sh . && strip -v * && du -sh . && cd ../.. && \
-  cd out/scratch && rm -r subdir helper scratch-simulator*
+## compile all the scenarios
+RUN ./ns3 build && \
+  cd build/lib && du -sh . && strip -v * && du -sh . && cd ../.. && \
+  cd build/scratch && rm -r subdir *-scratch-simulator*
 
 ENV PATH="/go/bin:${PATH}"
 COPY wait-for-it-quic /wait-for-it-quic
 RUN cd /wait-for-it-quic && go build .
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update && \
   apt-get install -y net-tools iptables && \
   apt-get clean
 
 WORKDIR /ns3
-COPY --from=builder /ns3/out/src/fd-net-device/* /ns3/src/fd-net-device/
-COPY --from=builder /ns3/out/scratch/*/* /ns3/scratch/
-COPY --from=builder /ns3/out/lib/ /ns3/lib
+COPY --from=builder /ns3/build/src/fd-net-device/* /ns3/src/fd-net-device/
+COPY --from=builder /ns3/build/scratch/*/* /ns3/scratch/
+COPY --from=builder /ns3/build/lib/ /ns3/lib
 COPY --from=builder /wait-for-it-quic/wait-for-it-quic /usr/bin
 
 # see https://gitlab.com/nsnam/ns-3-dev/issues/97
