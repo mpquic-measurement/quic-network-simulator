@@ -14,6 +14,7 @@
 #include "ns3/fd-net-device-module.h"
 #include "ns3/internet-module.h"
 #include "quic-network-simulator-helper.h"
+#include "ns3/quic-module.h"
 
 using namespace ns3;
 
@@ -62,20 +63,28 @@ Mac48Address getMacAddress(std::string iface) {
   return mac;
 }
 
-QuicNetworkSimulatorHelper::QuicNetworkSimulatorHelper() {
+MPQuicNetworkSimulatorHelper::MPQuicNetworkSimulatorHelper() {
   GlobalValue::Bind("SimulatorImplementationType", StringValue("ns3::RealtimeSimulatorImpl"));
   GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
 
   NodeContainer nodes;
-  nodes.Create(2);
+  nodes.Create(3);
   InternetStackHelper internet;
   internet.Install(nodes);
 
-  left_node_ = nodes.Get(0);
-  right_node_ = nodes.Get(1);
+  QuicHelper stack;
+  stack.InstallQuic(nodes.Get(0));
+  stack.InstallQuic(nodes.Get(1));
+  stack.InstallQuic(nodes.Get(2));
 
-  installNetDevice(left_node_, "eth0", getMacAddress("eth0"), Ipv4InterfaceAddress("193.167.0.2", "255.255.255.0"), Ipv6InterfaceAddress("fd00:cafe:cafe:0::2", 64));
-  installNetDevice(right_node_, "eth1", getMacAddress("eth1"), Ipv4InterfaceAddress("193.167.100.2", "255.255.255.0"), Ipv6InterfaceAddress("fd00:cafe:cafe:100::2", 64));
+
+  server_node_ = nodes.Get(0);
+  client_node_0 = nodes.Get(1);
+  client_node_1 = nodes.Get(2);
+
+  installNetDevice(client_node_0, "eth0", getMacAddress("eth0"), Ipv4InterfaceAddress("193.167.0.2", "255.255.255.0"), Ipv6InterfaceAddress("fd00:cafe:cafe:0::2", 64));
+  installNetDevice(client_node_1, "eth1", getMacAddress("eth1"), Ipv4InterfaceAddress("193.167.1.2", "255.255.255.0"), Ipv6InterfaceAddress("fd00:cafe:cafe:1::2", 64));
+  installNetDevice(server_node_, "eth2", getMacAddress("eth2"), Ipv4InterfaceAddress("193.167.100.2", "255.255.255.0"), Ipv6InterfaceAddress("fd00:cafe:cafe:100::2", 64));
 }
 
 void massageIpv6Routing(Ptr<Node> local, Ptr<Node> peer) {
@@ -94,7 +103,7 @@ done:
   routing->SetDefaultRoute(dst, 2);
 }
 
-void QuicNetworkSimulatorHelper::Run(Time duration) {
+void MPQuicNetworkSimulatorHelper::Run(Time duration) {
   signal(SIGTERM, onSignal);
   signal(SIGINT, onSignal);
   signal(SIGKILL, onSignal);
@@ -116,7 +125,7 @@ void QuicNetworkSimulatorHelper::Run(Time duration) {
   Simulator::Destroy();
 }
 
-void QuicNetworkSimulatorHelper::RunSynchronizer() const {
+void MPQuicNetworkSimulatorHelper::RunSynchronizer() const {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   NS_ABORT_MSG_IF(sockfd < 0, "ERROR opening socket");
 
@@ -134,10 +143,10 @@ void QuicNetworkSimulatorHelper::RunSynchronizer() const {
   listen(sockfd, 100);
 }
 
-Ptr<Node> QuicNetworkSimulatorHelper::GetLeftNode() const {
+Ptr<Node> MPQuicNetworkSimulatorHelper::GetLeftNode() const {
   return left_node_;
 }
 
-Ptr<Node> QuicNetworkSimulatorHelper::GetRightNode() const {
+Ptr<Node> MPQuicNetworkSimulatorHelper::GetRightNode() const {
   return right_node_;
 }

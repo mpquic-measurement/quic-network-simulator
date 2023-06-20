@@ -34,6 +34,8 @@
 #include "ns3/random-variable-stream.h"
 #include "ns3/flow-monitor-module.h"
 #include "ns3/gnuplot.h"
+#include "helper/quic-network-simulator-helper.h"
+#include "helper/quic-point-to-point-helper.h"
 #include <iostream>
 
 using namespace ns3;
@@ -103,7 +105,20 @@ main (int argc, char *argv[])
     cmd.AddValue ("LossRate", "e.g. 0.0001", lossrate);
     cmd.AddValue ("Select", "e.g. 0.0001", mselect);
     cmd.AddValue ("CcType", "in use congestion control type (0 - QuicNewReno, 1 - OLIA)", ccType);
+
+    std::string delay = "15ms";
+    std::string bandwidth = "10Mbps";
+    std::string queue = "25"; 
+
+    cmd.AddValue("delay", "delay of the p2p link", delay);
+    cmd.AddValue("bandwidth", "bandwidth of the p2p link", bandwidth);
+    cmd.AddValue("queue", "queue size of the p2p link (in packets)", queue);
+
     cmd.Parse (argc, argv);
+
+    NS_ABORT_MSG_IF(delay.length() == 0, "Missing parameter: delay");
+    NS_ABORT_MSG_IF(bandwidth.length() == 0, "Missing parameter: bandwidth");
+    NS_ABORT_MSG_IF(queue.length() == 0, "Missing parameter: queue");
 
     NS_LOG_INFO("\n\n#################### SIMULATION SET-UP ####################\n\n\n");
 
@@ -112,7 +127,7 @@ main (int argc, char *argv[])
     LogComponentEnableAll (LOG_PREFIX_TIME);
     LogComponentEnableAll (LOG_PREFIX_FUNC);
     LogComponentEnableAll (LOG_PREFIX_NODE);
-    LogComponentEnable ("wns3-mpquic-two-path", log_precision);
+    LogComponentEnable ("mpquic-ns3", log_precision);
 
     RngSeedManager::SetSeed (seed);
 
@@ -165,95 +180,113 @@ main (int argc, char *argv[])
 
     uint32_t maxBytes = stoi(myRandomNo);
 
-    NS_LOG_INFO ("Create nodes.");
-    NodeContainer c;
-    c.Create (10);
-    NodeContainer n0n1 = NodeContainer (c.Get (0), c.Get (1));
-    NodeContainer n1n8 = NodeContainer (c.Get (1), c.Get (8));
-    NodeContainer n8n2 = NodeContainer (c.Get (8), c.Get (2));
+    MPQuicNetworkSimulatorHelper sim;
 
-    NodeContainer n3n6 = NodeContainer (c.Get (3), c.Get (6));
-    NodeContainer n6n9 = NodeContainer (c.Get (6), c.Get (9));
-    NodeContainer n9n7 = NodeContainer (c.Get (9), c.Get (7));
-
-    NodeContainer n4n1 = NodeContainer (c.Get (4), c.Get (1));
-    NodeContainer n8n5 = NodeContainer (c.Get (8), c.Get (5));
-
-    NodeContainer n4n6 = NodeContainer (c.Get (4), c.Get (6));
-    NodeContainer n9n5 = NodeContainer (c.Get (9), c.Get (5));
+    // Stick in the point-to-point line between the sides.
+    QuicPointToPointHelper p2p_c0s;
+    p2p_c0s.SetDeviceAttribute("DataRate", StringValue(bandwidth));
+    p2p_c0s.SetChannelAttribute("Delay", StringValue(delay));
+    p2p_c0s.SetQueueSize(StringValue(queue + "p"));
+    NetDeviceContainer devices_c0 = p2p_c0s.Install(sim.GetClientNode0(), sim.GetServerNode());
 
 
-    InternetStackHelper internet;
-    internet.Install (c.Get (0));
-    internet.Install (c.Get (1));
-    internet.Install (c.Get (2));
-    internet.Install (c.Get (3));
-    internet.Install (c.Get (6));
-    internet.Install (c.Get (7));
-    internet.Install (c.Get (8));
-    internet.Install (c.Get (9));
+    QuicPointToPointHelper p2p_c1s;
+    p2p_c1s.SetDeviceAttribute("DataRate", StringValue(bandwidth));
+    p2p_c1s.SetChannelAttribute("Delay", StringValue(delay));
+    p2p_c1s.SetQueueSize(StringValue(queue + "p"));
+    NetDeviceContainer devices_c1 = p2p_c1s.Install(sim.GetClientNode0(), sim.GetServerNode());
 
-    QuicHelper stack;
-    stack.InstallQuic (c.Get (4));
-    stack.InstallQuic (c.Get (5));
+    sim.Run(Seconds(36000));
+
+    // NS_LOG_INFO ("Create nodes.");
+    // NodeContainer c;
+    // c.Create (10);
+    // NodeContainer n0n1 = NodeContainer (c.Get (0), c.Get (1));
+    // NodeContainer n1n8 = NodeContainer (c.Get (1), c.Get (8));
+    // NodeContainer n8n2 = NodeContainer (c.Get (8), c.Get (2));
+
+    // NodeContainer n3n6 = NodeContainer (c.Get (3), c.Get (6));
+    // NodeContainer n6n9 = NodeContainer (c.Get (6), c.Get (9));
+    // NodeContainer n9n7 = NodeContainer (c.Get (9), c.Get (7));
+
+    // NodeContainer n4n1 = NodeContainer (c.Get (4), c.Get (1));
+    // NodeContainer n8n5 = NodeContainer (c.Get (8), c.Get (5));
+
+    // NodeContainer n4n6 = NodeContainer (c.Get (4), c.Get (6));
+    // NodeContainer n9n5 = NodeContainer (c.Get (9), c.Get (5));
+
+
+    // InternetStackHelper internet;
+    // internet.Install (c.Get (0));
+    // internet.Install (c.Get (1));
+    // internet.Install (c.Get (2));
+    // internet.Install (c.Get (3));
+    // internet.Install (c.Get (6));
+    // internet.Install (c.Get (7));
+    // internet.Install (c.Get (8));
+    // internet.Install (c.Get (9));
+
+    // QuicHelper stack;
+    // stack.InstallQuic (c.Get (4));
+    // stack.InstallQuic (c.Get (5));
 
 
     // We create the channels first without any IP addressing information
-    NS_LOG_INFO ("Create channels.");
-    PointToPointHelper p2p;
-    p2p.SetDeviceAttribute ("DataRate", StringValue (std::to_string(rateVal0->GetValue())+"Mbps"));
-    p2p.SetChannelAttribute ("Delay", StringValue (std::to_string(delayVal0->GetValue())+"ms"));
-    NetDeviceContainer d1d8 = p2p.Install (n1n8);
-    d1d8.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
+    // NS_LOG_INFO ("Create channels.");
+    // PointToPointHelper p2p;
+    // p2p.SetDeviceAttribute ("DataRate", StringValue (std::to_string(rateVal0->GetValue())+"Mbps"));
+    // p2p.SetChannelAttribute ("Delay", StringValue (std::to_string(delayVal0->GetValue())+"ms"));
+    // NetDeviceContainer d1d8 = p2p.Install (n1n8);
+    // d1d8.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
 
-    p2p.SetDeviceAttribute ("DataRate", StringValue (std::to_string(rateVal1->GetValue())+"Mbps"));
-    p2p.SetChannelAttribute ("Delay", StringValue (std::to_string(delayVal1->GetValue())+"ms"));
-    NetDeviceContainer d6d9 = p2p.Install (n6n9);
-    d6d9.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
+    // p2p.SetDeviceAttribute ("DataRate", StringValue (std::to_string(rateVal1->GetValue())+"Mbps"));
+    // p2p.SetChannelAttribute ("Delay", StringValue (std::to_string(delayVal1->GetValue())+"ms"));
+    // NetDeviceContainer d6d9 = p2p.Install (n6n9);
+    // d6d9.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
 
-    p2p.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
-    p2p.SetChannelAttribute ("Delay", StringValue ("0ms"));
-    NetDeviceContainer d4d1 = p2p.Install (n4n1);
-    NetDeviceContainer d0d1 = p2p.Install (n0n1);
-    NetDeviceContainer d8d5 = p2p.Install (n8n5);
-    NetDeviceContainer d4d6 = p2p.Install (n4n6);
-    NetDeviceContainer d9d5 = p2p.Install (n9n5);
-    NetDeviceContainer d8d2 = p2p.Install (n8n2);
-    NetDeviceContainer d3d6 = p2p.Install (n3n6);
-    NetDeviceContainer d9d7 = p2p.Install (n9n7);
+    // p2p.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
+    // p2p.SetChannelAttribute ("Delay", StringValue ("0ms"));
+    // NetDeviceContainer d4d1 = p2p.Install (n4n1);
+    // NetDeviceContainer d0d1 = p2p.Install (n0n1);
+    // NetDeviceContainer d8d5 = p2p.Install (n8n5);
+    // NetDeviceContainer d4d6 = p2p.Install (n4n6);
+    // NetDeviceContainer d9d5 = p2p.Install (n9n5);
+    // NetDeviceContainer d8d2 = p2p.Install (n8n2);
+    // NetDeviceContainer d3d6 = p2p.Install (n3n6);
+    // NetDeviceContainer d9d7 = p2p.Install (n9n7);
 
     // Later, we add IP addresses.
-    NS_LOG_INFO ("Assign IP Addresses.");
-    Ipv4AddressHelper ipv4;
-    ipv4.SetBase ("10.1.4.0", "255.255.255.0");
-    Ipv4InterfaceContainer i4i1 = ipv4.Assign (d4d1);
+    // NS_LOG_INFO ("Assign IP Addresses.");
+    // Ipv4AddressHelper ipv4;
+    // ipv4.SetBase ("10.1.4.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i4i1 = ipv4.Assign (d4d1);
 
-    ipv4.SetBase ("10.1.9.0", "255.255.255.0");
-    Ipv4InterfaceContainer i1i8 = ipv4.Assign (d1d8);
+    // ipv4.SetBase ("10.1.9.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i1i8 = ipv4.Assign (d1d8);
 
-    ipv4.SetBase ("10.1.5.0", "255.255.255.0");
-    Ipv4InterfaceContainer i8i5 = ipv4.Assign (d8d5);
+    // ipv4.SetBase ("10.1.5.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i8i5 = ipv4.Assign (d8d5);
 
-    ipv4.SetBase ("10.1.6.0", "255.255.255.0");
-    Ipv4InterfaceContainer i4i6 = ipv4.Assign (d4d6);
+    // ipv4.SetBase ("10.1.6.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i4i6 = ipv4.Assign (d4d6);
 
-    ipv4.SetBase ("10.1.10.0", "255.255.255.0");
-    Ipv4InterfaceContainer i6i9 = ipv4.Assign (d6d9);
+    // ipv4.SetBase ("10.1.10.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i6i9 = ipv4.Assign (d6d9);
 
-    ipv4.SetBase ("10.1.7.0", "255.255.255.0");
-    Ipv4InterfaceContainer i9i5 = ipv4.Assign (d9d5);
+    // ipv4.SetBase ("10.1.7.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i9i5 = ipv4.Assign (d9d5);
 
-    ipv4.SetBase ("10.1.1.0", "255.255.255.0");
-    Ipv4InterfaceContainer i0i1 = ipv4.Assign (d0d1);
+    // ipv4.SetBase ("10.1.1.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i0i1 = ipv4.Assign (d0d1);
 
-    ipv4.SetBase ("10.1.2.0", "255.255.255.0");
-    Ipv4InterfaceContainer i1i2 = ipv4.Assign (d8d2);
+    // ipv4.SetBase ("10.1.2.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i1i2 = ipv4.Assign (d8d2);
 
-    ipv4.SetBase ("10.1.3.0", "255.255.255.0");
-    Ipv4InterfaceContainer i3i6 = ipv4.Assign (d3d6);
+    // ipv4.SetBase ("10.1.3.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i3i6 = ipv4.Assign (d3d6);
 
-    ipv4.SetBase ("10.1.8.0", "255.255.255.0");
-    Ipv4InterfaceContainer i6i7 = ipv4.Assign (d9d7);
+    // ipv4.SetBase ("10.1.8.0", "255.255.255.0");
+    // Ipv4InterfaceContainer i6i7 = ipv4.Assign (d9d7);
 
 
     Ptr<Ipv4> ipv4_n4 = c.Get(4)->GetObject<Ipv4> ();
@@ -273,16 +306,14 @@ main (int argc, char *argv[])
 
     uint16_t port2 = 9;  // well-known echo port number
 
-    MpquicBulkSendHelper source ("ns3::QuicSocketFactory",
-                            InetSocketAddress (i8i5.GetAddress (1), port2));
+    MpquicBulkSendHelper source ("ns3::QuicSocketFactory", InetSocketAddress (i8i5.GetAddress (1), port2));
     // Set the amount of data to send in bytes.  Zero is unlimited.
     source.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
     ApplicationContainer sourceApps = source.Install (c.Get (4));
     sourceApps.Start (Seconds (start_time));
     sourceApps.Stop (Seconds(simulationEndTime));
 
-    PacketSinkHelper sink2 ("ns3::QuicSocketFactory",
-                            InetSocketAddress (Ipv4Address::GetAny (), port2));
+    PacketSinkHelper sink2 ("ns3::QuicSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port2));
     ApplicationContainer sinkApps2 = sink2.Install (c.Get (5));
     sinkApps2.Start (Seconds (0.0));
     sinkApps2.Stop (Seconds(simulationEndTime));
