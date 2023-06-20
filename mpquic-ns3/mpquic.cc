@@ -36,8 +36,8 @@
 #include "ns3/gnuplot.h"
 #include "helper/quic-network-simulator-helper.h"
 #include "helper/quic-point-to-point-helper.h"
-#include <iostream>
 
+#include <iostream>
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("mpquic-ns3");
@@ -86,11 +86,12 @@ main (int argc, char *argv[])
     int seed = 1;
     TypeId ccTypeId = MpQuicCongestionOps::GetTypeId ();
 
-    string role = "client";
+    QuicNetworkSimulatorHelper sim;
+    sim.Role = "client";
 
     CommandLine cmd;
 
-    cmd.AddValue ("Role", "e.g. client/server", role);
+    cmd.AddValue ("Role", "e.g. client/server", sim.Role);
     cmd.AddValue ("SchedulerType", "in use scheduler type (0 - ROUND_ROBIN, 1 - MIN_RTT, 2 - BLEST, 3 - ECF, 4 - Peekaboo", schedulerType);
     cmd.AddValue ("BVar", "e.g. 100", bVar);
     cmd.AddValue ("BLambda", "e.g. 100", bLambda);
@@ -110,6 +111,8 @@ main (int argc, char *argv[])
     cmd.AddValue ("CcType", "in use congestion control type (0 - QuicNewReno, 1 - OLIA)", ccType);
 
     cmd.Parse (argc, argv);
+
+    std::cout << "role: " << sim.Role << std::endl;
 
     NS_LOG_INFO("\n\n#################### SIMULATION SET-UP ####################\n\n\n");
 
@@ -171,25 +174,21 @@ main (int argc, char *argv[])
 
     uint32_t maxBytes = stoi(myRandomNo);
 
-    MPQuicNetworkSimulatorHelper sim;
+
+    // string bandwidth = "10Mbps";
+    // string delay = "15ms";
+    // string queue = "25";
 
 
-#if 0
+    sim.Install();
+
     // Stick in the point-to-point line between the sides.
-    QuicPointToPointHelper p2p_c0s;
-    p2p_c0s.SetDeviceAttribute("DataRate", StringValue(bandwidth));
-    p2p_c0s.SetChannelAttribute("Delay", StringValue(delay));
-    p2p_c0s.SetQueueSize(StringValue(queue + "p"));
-    NetDeviceContainer devices_c0 = p2p_c0s.Install(sim.GetClientNode0(), sim.GetServerNode());
+    // QuicPointToPointHelper p2p;
+    // p2p.SetDeviceAttribute("DataRate", StringValue(bandwidth));
+    // p2p.SetChannelAttribute("Delay", StringValue(delay));
+    // p2p.SetQueueSize(StringValue(queue + "p"));
+    // NetDeviceContainer devices = p2p.Install(sim.GetClientNode(), sim.GetServerNode());
 
-
-    QuicPointToPointHelper p2p_c1s;
-    p2p_c1s.SetDeviceAttribute("DataRate", StringValue(bandwidth));
-    p2p_c1s.SetChannelAttribute("Delay", StringValue(delay));
-    p2p_c1s.SetQueueSize(StringValue(queue + "p"));
-    NetDeviceContainer devices_c1 = p2p_c1s.Install(sim.GetClientNode0(), sim.GetServerNode());
-
-    sim.Run(Seconds(36000));
 
     // NS_LOG_INFO ("Create nodes.");
     // NodeContainer c;
@@ -282,16 +281,16 @@ main (int argc, char *argv[])
     // Ipv4InterfaceContainer i6i7 = ipv4.Assign (d9d7);
 
 
-    Ptr<Ipv4> ipv4_n4 = c.Get(4)->GetObject<Ipv4> ();
-    Ipv4StaticRoutingHelper ipv4RoutingHelper;
-    Ptr<Ipv4StaticRouting> staticRouting_n4 = ipv4RoutingHelper.GetStaticRouting (ipv4_n4);
-    staticRouting_n4->AddHostRouteTo (Ipv4Address ("10.1.5.2"), Ipv4Address ("10.1.9.2") ,1);
-    staticRouting_n4->AddHostRouteTo (Ipv4Address ("10.1.7.2"), Ipv4Address ("10.1.10.2") ,2);
+    // Ptr<Ipv4> ipv4_n4 = c.Get(4)->GetObject<Ipv4> ();
+    // Ipv4StaticRoutingHelper ipv4RoutingHelper;
+    // Ptr<Ipv4StaticRouting> staticRouting_n4 = ipv4RoutingHelper.GetStaticRouting (ipv4_n4);
+    // staticRouting_n4->AddHostRouteTo (Ipv4Address ("10.1.5.2"), Ipv4Address ("10.1.9.2") ,1);
+    // staticRouting_n4->AddHostRouteTo (Ipv4Address ("10.1.7.2"), Ipv4Address ("10.1.10.2") ,2);
 
-    Ptr<Ipv4> ipv4_n5 = c.Get(5)->GetObject<Ipv4> ();
-    Ptr<Ipv4StaticRouting> staticRouting_n5 = ipv4RoutingHelper.GetStaticRouting (ipv4_n5);
-    staticRouting_n5->AddHostRouteTo (Ipv4Address ("10.1.4.1"), Ipv4Address ("10.1.9.1") ,1);
-    staticRouting_n5->AddHostRouteTo (Ipv4Address ("10.1.6.1"), Ipv4Address ("10.1.10.1") ,2);
+    // Ptr<Ipv4> ipv4_n5 = c.Get(5)->GetObject<Ipv4> ();
+    // Ptr<Ipv4StaticRouting> staticRouting_n5 = ipv4RoutingHelper.GetStaticRouting (ipv4_n5);
+    // staticRouting_n5->AddHostRouteTo (Ipv4Address ("10.1.4.1"), Ipv4Address ("10.1.9.1") ,1);
+    // staticRouting_n5->AddHostRouteTo (Ipv4Address ("10.1.6.1"), Ipv4Address ("10.1.10.1") ,2);
 
     // Create router nodes, initialize routing database and set up the routing
     // tables in the nodes.
@@ -299,68 +298,70 @@ main (int argc, char *argv[])
 
     uint16_t port2 = 9;  // well-known echo port number
 
-    MpquicBulkSendHelper source ("ns3::QuicSocketFactory", InetSocketAddress (i8i5.GetAddress (1), port2));
-    // Set the amount of data to send in bytes.  Zero is unlimited.
-    source.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
-    ApplicationContainer sourceApps = source.Install (c.Get (4));
-    sourceApps.Start (Seconds (start_time));
-    sourceApps.Stop (Seconds(simulationEndTime));
 
-    PacketSinkHelper sink2 ("ns3::QuicSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port2));
-    ApplicationContainer sinkApps2 = sink2.Install (c.Get (5));
-    sinkApps2.Start (Seconds (0.0));
-    sinkApps2.Stop (Seconds(simulationEndTime));
-
-
-    std::ostringstream file;
-    file<<"./scheduler" << schedulerType;
-
-    AsciiTraceHelper asciiTraceHelper;
-    std::ostringstream fileName;
-    fileName <<  "./scheduler" << schedulerType << "-rx" << ".txt";
-    Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream (fileName.str ());
-
-
-    FlowMonitorHelper flowmon;
-    Ptr<FlowMonitor> monitor = flowmon.InstallAll ();
-    ThroughputMonitor(&flowmon, monitor, stream);
-
-
-    for (double i = 1; i < simulationEndTime; i = i+0.1){
-        Simulator::Schedule (Seconds (i), &ModifyLinkRate, &d1d8, DataRate(std::to_string(rateVal0->GetValue())+"Mbps"),  Time::FromInteger(delayVal0->GetValue(), Time::MS));
-        Simulator::Schedule (Seconds (i), &ModifyLinkRate, &d6d9, DataRate(std::to_string(rateVal1->GetValue())+"Mbps"),Time::FromInteger(delayVal1->GetValue(), Time::MS));
+    if (sim.Role == "server") {
+        MpquicBulkSendHelper source("ns3::QuicSocketFactory", InetSocketAddress(sim.GetServerAddress(), port2));
+        // Set the amount of data to send in bytes.  Zero is unlimited.
+        source.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
+        ApplicationContainer sourceApps = source.Install (sim.GetServerNode());
+        sourceApps.Start (Seconds (start_time));
+        sourceApps.Stop (Seconds(simulationEndTime));
+    } else if (sim.Role == "client") {
+        PacketSinkHelper sink2 ("ns3::QuicSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port2));
+        ApplicationContainer sinkApps2 = sink2.Install (sim.GetClientNode());
+        sinkApps2.Start (Seconds (0.0));
+        sinkApps2.Stop (Seconds(simulationEndTime));
     }
 
+    // std::ostringstream file;
+    // file<<"./scheduler" << schedulerType;
 
-    Simulator::Stop (Seconds(simulationEndTime));
+    // AsciiTraceHelper asciiTraceHelper;
+    // std::ostringstream fileName;
+    // fileName <<  "./scheduler" << schedulerType << "-rx" << ".txt";
+    // Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream (fileName.str ());
+
+
+    // FlowMonitorHelper flowmon;
+    // Ptr<FlowMonitor> monitor = flowmon.InstallAll ();
+    // ThroughputMonitor(&flowmon, monitor, stream);
+
+
+    // for (double i = 1; i < simulationEndTime; i = i+0.1){
+    //     Simulator::Schedule (Seconds (i), &ModifyLinkRate, &d1d8, DataRate(std::to_string(rateVal0->GetValue())+"Mbps"),  Time::FromInteger(delayVal0->GetValue(), Time::MS));
+    //     Simulator::Schedule (Seconds (i), &ModifyLinkRate, &d6d9, DataRate(std::to_string(rateVal1->GetValue())+"Mbps"),  Time::FromInteger(delayVal1->GetValue(), Time::MS));
+    // }
+
+
+    // Simulator::Stop (Seconds(simulationEndTime));
     NS_LOG_INFO("\n\n#################### STARTING RUN ####################\n\n");
-    Simulator::Run ();
+    // Simulator::Run ();
+    sim.Run(Seconds(36000));
 
-    monitor->CheckForLostPackets ();
-    Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
-    FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
 
-    for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
-    {
-        Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
-        if (i->first == 1 || i->first == 3){
+    // monitor->CheckForLostPackets ();
+    // Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
+    // FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
 
-        NS_LOG_INFO("Flow " << i->first  << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")"
-        << "\n Last rx Seconds: " << i->second.timeLastRxPacket.GetSeconds()
-        << "\n Rx Bytes: " << i->second.rxBytes
-        << "\n DelaySum(s): " << i->second.delaySum.GetSeconds()
-        << "\n rxPackets: " << i->second.rxPackets);
-        }
+    // for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+    // {
+    //     Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
+    //     if (i->first == 1 || i->first == 3){
 
-    }
+    //     NS_LOG_INFO("Flow " << i->first  << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")"
+    //     << "\n Last rx Seconds: " << i->second.timeLastRxPacket.GetSeconds()
+    //     << "\n Rx Bytes: " << i->second.rxBytes
+    //     << "\n DelaySum(s): " << i->second.delaySum.GetSeconds()
+    //     << "\n rxPackets: " << i->second.rxPackets);
+    //     }
 
-    NS_LOG_INFO("\nfile size: "<<maxBytes<< "Bytes, scheduler type " <<schedulerType<<
-                "\npath 0: rate "<< rate0a <<", delay "<< delay0a <<
-                "\npath 1: rate " << rate1a << ", delay " << delay1a );
+    // }
 
-    Simulator::Destroy ();
+    // NS_LOG_INFO("\nfile size: "<<maxBytes<< "Bytes, scheduler type " <<schedulerType<<
+    //             "\npath 0: rate "<< rate0a <<", delay "<< delay0a <<
+    //             "\npath 1: rate " << rate1a << ", delay " << delay1a );
 
-#endif
+    // Simulator::Destroy ();
 
 
     return 0;

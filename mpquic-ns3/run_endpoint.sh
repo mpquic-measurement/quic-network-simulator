@@ -12,6 +12,7 @@ if [ "$ROLE" == "client" ]; then
     # Wait for the simulator to start up.
     /wait-for-it.sh sim:57832 -s -t 30
     echo "mpquic client"
+    /ns3/build/scratch/ns3.38-mpquic-ns3-default --Role=client
 elif [ "$ROLE" == "server" ]; then
     echo "server"
 fi

@@ -14,7 +14,6 @@
 #include "ns3/fd-net-device-module.h"
 #include "ns3/internet-module.h"
 #include "quic-network-simulator-helper.h"
-#include "ns3/quic-module.h"
 
 using namespace ns3;
 
@@ -25,8 +24,10 @@ void onSignal(int signum) {
   NS_FATAL_ERROR(signum);
 }
 
-void installNetDevice(Ptr<Node> node, std::string deviceName, Mac48AddressValue macAddress, Ipv4InterfaceAddress ipv4Address, Ipv6InterfaceAddress ipv6Address) {
+void QuicNetworkSimulatorHelper::InstallNetDevice(Ptr<Node> node, std::string deviceName, Mac48AddressValue macAddress, Ipv4InterfaceAddress ipv4Address, Ipv6InterfaceAddress ipv6Address) {
   EmuFdNetDeviceHelper emu;
+  std::cout << "InstallNetDevice: " << deviceName << std::endl;
+
   emu.SetDeviceName(deviceName);
   NetDeviceContainer devices = emu.Install(node);
   Ptr<NetDevice> device = devices.Get(0);
@@ -44,9 +45,19 @@ void installNetDevice(Ptr<Node> node, std::string deviceName, Mac48AddressValue 
   ipv6->AddAddress(interface, ipv6Address);
   ipv6->SetMetric(interface, 1);
   ipv6->SetUp(interface);
+
+  std::cout << "InstallNetDevice finished" << std::endl;
 }
 
-Mac48Address getMacAddress(std::string iface) {
+Ipv4Address QuicNetworkSimulatorHelper::GetServerAddress() {
+  return server_address.GetAddress();
+}
+
+Ipv4Address QuicNetworkSimulatorHelper::GetClientAddress() {
+  return client_address.GetAddress();
+}
+
+Mac48Address QuicNetworkSimulatorHelper::GetMac48Address(std::string iface) {
   unsigned char buf[6];
   int fd = socket(AF_INET, SOCK_DGRAM, 0);
   struct ifreq ifr;
@@ -63,31 +74,7 @@ Mac48Address getMacAddress(std::string iface) {
   return mac;
 }
 
-MPQuicNetworkSimulatorHelper::MPQuicNetworkSimulatorHelper() {
-  GlobalValue::Bind("SimulatorImplementationType", StringValue("ns3::RealtimeSimulatorImpl"));
-  GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
-
-  NodeContainer nodes;
-  nodes.Create(3);
-  InternetStackHelper internet;
-  internet.Install(nodes);
-
-  QuicHelper stack;
-  stack.InstallQuic(nodes.Get(0));
-  stack.InstallQuic(nodes.Get(1));
-  stack.InstallQuic(nodes.Get(2));
-
-
-  server_node_ = nodes.Get(0);
-  client_node_0 = nodes.Get(1);
-  client_node_1 = nodes.Get(2);
-
-  installNetDevice(client_node_0, "eth0", getMacAddress("eth0"), Ipv4InterfaceAddress("193.167.0.2", "255.255.255.0"), Ipv6InterfaceAddress("fd00:cafe:cafe:0::2", 64));
-  installNetDevice(client_node_1, "eth1", getMacAddress("eth1"), Ipv4InterfaceAddress("193.167.1.2", "255.255.255.0"), Ipv6InterfaceAddress("fd00:cafe:cafe:1::2", 64));
-  installNetDevice(server_node_, "eth2", getMacAddress("eth2"), Ipv4InterfaceAddress("193.167.100.2", "255.255.255.0"), Ipv6InterfaceAddress("fd00:cafe:cafe:100::2", 64));
-}
-
-void massageIpv6Routing(Ptr<Node> local, Ptr<Node> peer) {
+void QuicNetworkSimulatorHelper::MessageIpv6Routing(Ptr<Node> local, Ptr<Node> peer) {
   Ptr<Ipv6StaticRouting> routing = Ipv6RoutingHelper::GetRouting<Ipv6StaticRouting>(local->GetObject<Ipv6>()->GetRoutingProtocol());
   Ptr<Ipv6> peer_ipv6 = peer->GetObject<Ipv6>();
   Ipv6Address dst;
@@ -103,7 +90,35 @@ done:
   routing->SetDefaultRoute(dst, 2);
 }
 
-void MPQuicNetworkSimulatorHelper::Run(Time duration) {
+
+QuicNetworkSimulatorHelper::QuicNetworkSimulatorHelper() {
+  GlobalValue::Bind("SimulatorImplementationType", StringValue("ns3::RealtimeSimulatorImpl"));
+  GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
+}
+
+void QuicNetworkSimulatorHelper::Install() {
+  NodeContainer node;
+  node.Create(1);
+
+  InternetStackHelper internet;
+  internet.Install(node);
+
+  if (Role == "client") {
+    std::cout << "install client address" << std::endl;
+
+    client_node_ = node.Get(0);
+    client_address = Ipv4InterfaceAddress("193.167.0.2", "255.255.255.0");
+    InstallNetDevice(client_node_, "eth0", GetMac48Address("eth0"), client_address, Ipv6InterfaceAddress("fd00:cafe:cafe:0::2", 64)); 
+  } else if (Role == "server") {
+    server_node_ = node.Get(0);
+
+    server_address = Ipv4InterfaceAddress("193.167.100.2", "255.255.255.0");
+    InstallNetDevice(server_node_, "eth1", GetMac48Address("eth1"), server_address, Ipv6InterfaceAddress("fd00:cafe:cafe:100::2", 64));
+  }
+}
+
+
+void QuicNetworkSimulatorHelper::Run(Time duration) {
   signal(SIGTERM, onSignal);
   signal(SIGINT, onSignal);
   signal(SIGKILL, onSignal);
@@ -111,8 +126,8 @@ void MPQuicNetworkSimulatorHelper::Run(Time duration) {
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
   // Ipv6GlobalRoutingHelper does not exist - fake it
-  massageIpv6Routing(left_node_, right_node_);
-  massageIpv6Routing(right_node_, left_node_);
+  // MessageIpv6Routing(client_node_, server_node_);
+  // MessageIpv6Routing(server_node_, client_node_);
 
   // write the routing table to file
   Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper>("dynamic-global-routing.routes", std::ios::out);
@@ -125,7 +140,7 @@ void MPQuicNetworkSimulatorHelper::Run(Time duration) {
   Simulator::Destroy();
 }
 
-void MPQuicNetworkSimulatorHelper::RunSynchronizer() const {
+void QuicNetworkSimulatorHelper::RunSynchronizer() const {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   NS_ABORT_MSG_IF(sockfd < 0, "ERROR opening socket");
 
@@ -143,10 +158,10 @@ void MPQuicNetworkSimulatorHelper::RunSynchronizer() const {
   listen(sockfd, 100);
 }
 
-Ptr<Node> MPQuicNetworkSimulatorHelper::GetLeftNode() const {
-  return left_node_;
+Ptr<Node> QuicNetworkSimulatorHelper::GetClientNode() const {
+  return client_node_;
 }
 
-Ptr<Node> MPQuicNetworkSimulatorHelper::GetRightNode() const {
-  return right_node_;
+Ptr<Node> QuicNetworkSimulatorHelper::GetServerNode() const {
+  return server_node_;
 }

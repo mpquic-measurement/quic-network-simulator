@@ -3,6 +3,8 @@ FROM cr.jinwei.me/mpquic/quic-network-simulator:22.04
 RUN apt-get update && \
   apt-get install -y wget net-tools iputils-ping tcpdump ethtool iperf iproute2
 
+WORKDIR /
+
 COPY setup.sh .
 RUN chmod +x setup.sh
 

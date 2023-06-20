@@ -25,7 +25,7 @@ services:
         ipv6_address: fd00:cafe:cafe:100::2
 
   server:
-    image: cr.jinwei.me/mpquic/quic-network-simulator-xquic:22.04
+    image: cr.jinwei.me/mpquic/quic-network-simulator-ns3:22.04
     container_name: server
     hostname: server
     stdin_open: true

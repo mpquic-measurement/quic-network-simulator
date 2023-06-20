@@ -1,28 +1,33 @@
-#ifndef MPQUIC_NETWORK_SIMULATOR_HELPER_H
-#define MPQUIC_NETWORK_SIMULATOR_HELPER_H
+#ifndef QUIC_NETWORK_SIMULATOR_HELPER_H
+#define QUIC_NETWORK_SIMULATOR_HELPER_H
 
 #include "ns3/node.h"
 
 using namespace ns3;
 
-class MPQuicNetworkSimulatorHelper {
+class QuicNetworkSimulatorHelper {
 public:
-  MPQuicNetworkSimulatorHelper();
+  QuicNetworkSimulatorHelper();
   void Run(Time);
-  Ptr<Node> GetLeftNode() const;
-  Ptr<Node> GetRightNode() const;
-  
+  Ptr<Node> GetClientNode() const;
   Ptr<Node> GetServerNode() const;
-  Ptr<Node> GetClientNode0() const;
-  Ptr<Node> GetClientNode1() const;
+  void InstallNetDevice(Ptr<Node> node, std::string deviceName, Mac48AddressValue macAddress, Ipv4InterfaceAddress ipv4Address, Ipv6InterfaceAddress ipv6Address);
+  Mac48Address GetMac48Address(std::string iface);
+  void MessageIpv6Routing(Ptr<Node> local, Ptr<Node> peer);
+  Ipv4Address GetServerAddress();
+  Ipv4Address GetClientAddress();
+
+  void Install();
+
+  Ipv4InterfaceAddress client_address;
+  Ipv4InterfaceAddress server_address;
+  
+
+  std::string Role;
 
 private:
   void RunSynchronizer() const;
-  Ptr<Node> left_node_, right_node_;
-
-  Ptr<Node> server_node_;
-  Ptr<Node> client_node_0;
-  Ptr<Node> client_node_1;
+  Ptr<Node> client_node_, server_node_;
 };
 
 #endif /* QUIC_NETWORK_SIMULATOR_HELPER_H */
