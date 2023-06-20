@@ -13,8 +13,7 @@ RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for
 
 WORKDIR /ns3/scratch/mpquic
 
-COPY CMakeLists.txt .
-COPY mpquic.cc .
+ADD . /ns3/scratch/mpquic
 
 WORKDIR /ns3
 

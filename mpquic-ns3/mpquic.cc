@@ -85,9 +85,12 @@ main (int argc, char *argv[])
     int mselect = 3;
     int seed = 1;
     TypeId ccTypeId = MpQuicCongestionOps::GetTypeId ();
+
+    string role = "client";
+
     CommandLine cmd;
 
-
+    cmd.AddValue ("Role", "e.g. client/server", role);
     cmd.AddValue ("SchedulerType", "in use scheduler type (0 - ROUND_ROBIN, 1 - MIN_RTT, 2 - BLEST, 3 - ECF, 4 - Peekaboo", schedulerType);
     cmd.AddValue ("BVar", "e.g. 100", bVar);
     cmd.AddValue ("BLambda", "e.g. 100", bLambda);
@@ -106,19 +109,7 @@ main (int argc, char *argv[])
     cmd.AddValue ("Select", "e.g. 0.0001", mselect);
     cmd.AddValue ("CcType", "in use congestion control type (0 - QuicNewReno, 1 - OLIA)", ccType);
 
-    std::string delay = "15ms";
-    std::string bandwidth = "10Mbps";
-    std::string queue = "25"; 
-
-    cmd.AddValue("delay", "delay of the p2p link", delay);
-    cmd.AddValue("bandwidth", "bandwidth of the p2p link", bandwidth);
-    cmd.AddValue("queue", "queue size of the p2p link (in packets)", queue);
-
     cmd.Parse (argc, argv);
-
-    NS_ABORT_MSG_IF(delay.length() == 0, "Missing parameter: delay");
-    NS_ABORT_MSG_IF(bandwidth.length() == 0, "Missing parameter: bandwidth");
-    NS_ABORT_MSG_IF(queue.length() == 0, "Missing parameter: queue");
 
     NS_LOG_INFO("\n\n#################### SIMULATION SET-UP ####################\n\n\n");
 
@@ -182,6 +173,8 @@ main (int argc, char *argv[])
 
     MPQuicNetworkSimulatorHelper sim;
 
+
+#if 0
     // Stick in the point-to-point line between the sides.
     QuicPointToPointHelper p2p_c0s;
     p2p_c0s.SetDeviceAttribute("DataRate", StringValue(bandwidth));
@@ -366,6 +359,9 @@ main (int argc, char *argv[])
                 "\npath 1: rate " << rate1a << ", delay " << delay1a );
 
     Simulator::Destroy ();
+
+#endif
+
 
     return 0;
 }
