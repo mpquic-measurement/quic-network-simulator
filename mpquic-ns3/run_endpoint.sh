@@ -16,6 +16,7 @@ if [ "$ROLE" == "client" ]; then
     /wait-for-it.sh sim:57832 -s -t 30
     echo "mpquic client"
 #    sleep 1000000
+    sleep 5
     /ns3/build/scratch/quic-client/ns3.38-quic-client-default
 elif [ "$ROLE" == "server" ]; then
     /wait-for-it.sh sim:57832 -s -t 30

@@ -40,7 +40,7 @@ RUN ./ns3 build && \
 
 # add mpquic module
 WORKDIR /ns3/src
-RUN git clone https://github.com/ssjShirley/ns3-mpquic-module.git quic && \
+RUN git clone https://github.com/mpquic-measurement/ns3-mpquic-module.git quic && \
     cp -r quic/quic-applications/helper/. applications/helper/. && \
     cp -r quic/quic-applications/model/. applications/model/. && \
     mv quic/examples ../examples/quic && \
