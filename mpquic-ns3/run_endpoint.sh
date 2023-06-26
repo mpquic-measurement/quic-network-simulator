@@ -8,13 +8,18 @@
 # - SERVER_PARAMS contains user-supplied command line parameters
 # - CLIENT_PARAMS contains user-supplied command line parameters
 
+pwd
+mkdir -p /logs
+
 if [ "$ROLE" == "client" ]; then
     # Wait for the simulator to start up.
     /wait-for-it.sh sim:57832 -s -t 30
     echo "mpquic client"
+#    sleep 1000000
     /ns3/build/scratch/quic-client/ns3.38-quic-client-default
 elif [ "$ROLE" == "server" ]; then
     /wait-for-it.sh sim:57832 -s -t 30
     echo "server"
+#    sleep 1000000
     /ns3/build/scratch/quic-server/ns3.38-quic-server-default
 fi
