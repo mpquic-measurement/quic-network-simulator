@@ -30,6 +30,7 @@ services:
     hostname: server
     stdin_open: true
     tty: true
+    entrypoint: /bin/bash -c "sleep 100000000"
     volumes:
       - ./logs/server:/logs
     environment:
@@ -55,6 +56,7 @@ services:
     hostname: client
     stdin_open: true
     tty: true
+    entrypoint: /bin/bash -c "sleep 100000000"
     volumes:
       - ./logs/client:/logs
     environment:
