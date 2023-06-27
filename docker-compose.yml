@@ -30,6 +30,7 @@ services:
     hostname: server
     stdin_open: true
     tty: true
+    entrypoint: /bin/bash -c "sleep 100000000"
     volumes:
       - ./logs/server:/logs
     environment:
@@ -54,6 +55,7 @@ services:
     container_name: client
     hostname: client
     stdin_open: true
+    entrypoint: /bin/bash -c "sleep 100000000"
     tty: true
     volumes:
       - ./logs/client:/logs
@@ -78,8 +80,8 @@ networks:
   leftnet:
     driver: bridge
     driver_opts:
-      com.docker.network.bridge.enable_ip_masquerade: 'false'
-    enable_ipv6: true
+      com.docker.network.bridge.enable_ip_masquerade: 'true'
+    enable_ipv6: false
     ipam:
       config:
         - subnet: 193.167.0.0/24
@@ -87,8 +89,8 @@ networks:
   rightnet:
     driver: bridge
     driver_opts:
-      com.docker.network.bridge.enable_ip_masquerade: 'false'
-    enable_ipv6: true
+      com.docker.network.bridge.enable_ip_masquerade: 'true'
+    enable_ipv6: false
     ipam:
       config:
         - subnet: 193.167.100.0/24

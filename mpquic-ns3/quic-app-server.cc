@@ -1,30 +1,4 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-
-// Network topology
-//
-//       n0 ----------- n1
-//            40 Gbps
-//            0.01 ms
-
-// This programs illustrates how QUIC pacing can be used and how user can set
-// pacing rate. The program gives information about each flow like transmitted
-// and received bytes (packets) and throughput of that flow. Currently, it is
-// using QUIC NewReno-like but in future after having congestion control
-// algorithms which can change pacing rate can be used.
 
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"

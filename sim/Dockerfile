@@ -74,4 +74,7 @@ COPY run.sh .
 RUN chmod +x run.sh
 RUN mkdir /logs
 
+RUN echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections && \
+    apt-get install iproute2 tshark iputils-ping -y
+  
 ENTRYPOINT [ "./run.sh" ]

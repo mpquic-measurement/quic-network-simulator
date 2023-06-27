@@ -19,6 +19,7 @@ build_exec(
   LIBRARIES_TO_LINK
     ${libquic}
     ${libcore}
+    ${libnetwork}
     ${libfd-net-device}
 )
 build_exec(
@@ -28,6 +29,7 @@ build_exec(
   LIBRARIES_TO_LINK 
     ${libquic}
     ${libcore}
+    ${libnetwork}
     ${libfd-net-device}
 )
 build_exec(
@@ -37,5 +39,6 @@ build_exec(
   LIBRARIES_TO_LINK
     ${libquic}
     ${libcore}
+    ${libnetwork}
     ${libfd-net-device}
 )
