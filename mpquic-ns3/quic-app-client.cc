@@ -30,10 +30,10 @@ int main(int argc, char *argv[]) {
   GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
 
   string deviceName("eth0");
-  string localAddress("193.167.0.100");
-  string remoteAddress("213.239.214.178");
+  string localAddress("172.21.0.2");
+  string remoteAddress("172.21.0.1");
   // string remoteAddress("193.167.100.100");
-  string localGateway("193.167.0.1");
+  string localGateway("172.21.0.1");
   Ipv4Mask localMask("255.255.255.0");
 
   Ipv4Address serverAddress(remoteAddress.c_str());
