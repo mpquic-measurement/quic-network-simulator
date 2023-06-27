@@ -1,0 +1,99 @@
+version: "3"
+
+services:
+  #  sim:
+  #    image: cr.jinwei.me/mpquic/quic-network-simulator:22.04
+  #    container_name: sim
+  #    hostname: sim
+  #    stdin_open: true
+  #    tty: true
+  #    #entrypoint: /bin/bash -c "sleep 100000000"
+  #    volumes:
+  #      - ./logs/sim:/logs
+  #    environment:
+  #      - SCENARIO_PARAMS=$SCENARIO_PARAMS
+  #    cap_add: 
+  #      - NET_ADMIN
+  #    expose:
+  #      - "57832"
+  #    networks:
+  #      leftnet:
+  #        ipv4_address: 193.167.0.2
+  #        ipv6_address: fd00:cafe:cafe:0::2
+  #      rightnet:
+  #        ipv4_address: 193.167.100.2
+  #        ipv6_address: fd00:cafe:cafe:100::2
+
+  #server:
+  #  image: cr.jinwei.me/mpquic/quic-network-simulator-xquic:22.04
+  #  container_name: server
+  #  hostname: server
+  #  stdin_open: true
+  #  tty: true
+  #  entrypoint: /bin/bash -c "sleep 100000000"
+  #  volumes:
+  #    - ./logs/server:/logs
+  #  environment:
+  #    - ROLE=server
+  #    - SERVER_PARAMS=$SERVER_PARAMS
+  #  #depends_on:
+  #    #  - sim
+  #  cap_add: 
+  #    - NET_ADMIN
+  #  networks:
+  #    rightnet:
+  #      ipv4_address: 193.167.100.100
+  #      ipv6_address: fd00:cafe:cafe:100::100
+  #  #extra_hosts:
+  #  #  - "client4:193.167.0.100"
+  #  #  - "client6:fd00:cafe:cafe:0::100"
+  #  #  - "client46:193.167.0.100"
+  #  #  - "client46:fd00:cafe:cafe:0::100"
+
+  client:
+    image: cr.jinwei.me/mpquic/quic-network-simulator-ns3:22.04
+    container_name: client
+    hostname: client
+    stdin_open: true
+    tty: true
+    entrypoint: /bin/bash -c "sleep 100000000"
+    volumes:
+      - ./logs/client:/logs
+    environment:
+      - ROLE=client
+      - CLIENT_PARAMS=$CLIENT_PARAMS
+    #depends_on:
+    #  - sim
+    cap_add: 
+      - NET_ADMIN
+    # extra_hosts:
+    #- "host.docker.internal:host-gateway"
+    #networks:
+    #  leftnet:
+    #    ipv4_address: 193.167.0.100
+    #    ipv6_address: fd00:cafe:cafe:0::100
+    #extra_hosts:
+    #  - "server4:193.167.100.100"
+    #  - "server6:fd00:cafe:cafe:100::100"
+    #  - "server46:193.167.100.100"
+    #  - "server46:fd00:cafe:cafe:100::100"
+
+#networks:
+#  leftnet:
+#    driver: bridge
+#    driver_opts:
+#      com.docker.network.bridge.enable_ip_masquerade: 'false'
+#    enable_ipv6: true
+#    ipam:
+#      config:
+#        - subnet: 193.167.0.0/24
+#        - subnet: fd00:cafe:cafe:0::/64
+#  rightnet:
+#    driver: bridge
+#    driver_opts:
+#      com.docker.network.bridge.enable_ip_masquerade: 'false'
+#    enable_ipv6: true
+#    ipam:
+#      config:
+#        - subnet: 193.167.100.0/24
+#        - subnet: fd00:cafe:cafe:100::/64
